@@ -8,6 +8,10 @@ Can GOES-18 X-ray time series help estimate the probability of an M-class-or-str
 
 This is an exploratory research portfolio project, not an operational space-weather warning system.
 
+## Visual project summary
+
+See the [visual report](reports/portfolio_summary.md) for the signal-vs-flare plot, flare counts by year, model precision-recall curves, and month-by-month 2025 alert analysis.
+
 ## Current results
 
 The first end-to-end run uses science-quality GOES-18 XRS data from June 2022 through 2025 and NOAA's event catalog. It contains 1.86 million one-minute timestamps, 1,867 cataloged M/X events within the measurement interval, and 350,060 five-minute modeling rows after data-quality and feature-window checks.
@@ -66,4 +70,6 @@ Exact file names and data caveats are documented in [`data/README.md`](data/READ
 3. Add calibration and uncertainty analysis; compare against simple flux-threshold and persistence baselines.
 4. Examine detector gaps, solar-cycle drift, and sensitivity to quality-flag policy.
 5. Expand the scientific angle with active-region/context data only after the XRS-only baseline is stable.
+
+
 
