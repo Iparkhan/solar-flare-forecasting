@@ -35,13 +35,17 @@ Average precision was 0.104 for logistic regression and 0.106 for histogram grad
 
 The threshold remains fixed across 2025. Month-to-month variation highlights why a single summary score is not enough for a rare-event forecasting problem.
 
+## 5. What happens when alerts are grouped by flare event?
+
+Window scores can make a run of adjacent alerts look like many independent successes. Grouping alerts into episodes gives a more conservative view: under the documented rule, histogram gradient boosting detected 16% of distinct 2025 M/X events, and 7% of alarm episodes were followed by an event within one hour. This exposes a substantial false-alert and missed-event problem. See the [event-level evaluation](first_model_evaluation.md#event-level-alarm-episodes) and its [CSV table](tables/event_level_test_2025.csv).
+
 ## Evaluation design and limitations
 
 - Train: June 2022–2023; validation: 2024; final test: 2025.
 - Year boundaries are kept outside the 60-minute target horizon.
 - Features include recent log flux, short-term variability and trend, and the A/B channel hardness ratio.
 - Samples overlap in time, so window-level recall is not the percentage of distinct flares successfully forecast.
-- False alerts remain frequent; event-level alert grouping, lead-time scoring, calibration, uncertainty, and simple flux-threshold comparisons are next.
+- Event-level evaluation uses a specific 60-minute quiet-gap and forward-match rule; alternative alert policies, calibration, uncertainty, and simple flux-threshold comparisons remain to be studied.
 
 ## Detailed artifacts
 

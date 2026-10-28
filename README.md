@@ -10,13 +10,13 @@ This is an exploratory research portfolio project, not an operational space-weat
 
 ## Visual project summary
 
-See the [visual report](reports/portfolio_summary.md) for the signal-vs-flare plot, flare counts by year, model precision-recall curves, and month-by-month 2025 alert analysis.
+See the [visual report](reports/portfolio_summary.md) for the signal-vs-flare plot, flare counts by year, model precision-recall curves, and month-by-month 2025 alert analysis. The [model evaluation](reports/first_model_evaluation.md) now also reports results after grouping threshold crossings into alert episodes and matching them to cataloged flare onsets.
 
 ## Current results
 
 The first end-to-end run uses science-quality GOES-18 XRS data from June 2022 through 2025 and NOAA's event catalog. It contains 1.86 million one-minute timestamps, 1,867 cataloged M/X events within the measurement interval, and 350,060 five-minute modeling rows after data-quality and feature-window checks.
 
-On the untouched 2025 test year, average precision was 0.104 for logistic regression and 0.106 for histogram gradient boosting, compared with a 0.039 positive-rate baseline. At thresholds selected on 2024 validation data, gradient boosting reached 0.30 recall and 0.13 precision on overlapping time windows. These are preliminary retrospective metrics; they do not establish operational forecast skill. See [`reports/first_model_evaluation.md`](reports/first_model_evaluation.md) and [`reports/initial_data_audit.md`](reports/initial_data_audit.md).
+On the untouched 2025 test year, average precision was 0.104 for logistic regression and 0.106 for histogram gradient boosting, compared with a 0.039 positive-rate baseline. Under the documented alarm-episode rule, gradient boosting detected 16% of M/X events; about 7% of alarm episodes were followed by an event within one hour. The episode rule is exploratory and reveals substantial false-alert burden; results do not establish operational forecast skill. See [`reports/first_model_evaluation.md`](reports/first_model_evaluation.md) and [`reports/initial_data_audit.md`](reports/initial_data_audit.md).
 
 ## Methods
 
@@ -39,6 +39,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe src\download_yearly_data.py
 .\.venv\Scripts\python.exe src\build_features.py
 .\.venv\Scripts\python.exe src\train_models.py
+.\.venv\Scripts\python.exe src\evaluate_event_alerts.py
 .\.venv\Scripts\jupyter-lab.exe notebooks\01_goes_flare_forecasting.ipynb
 ```
 
@@ -65,7 +66,7 @@ Exact file names and data caveats are documented in [`data/README.md`](data/READ
 
 ## Next improvements
 
-1. Evaluate alert quality at event level, grouping adjacent positive windows into alert episodes.
+1. Compare event scores across alternate alarm-merging and matching rules, with bootstrap uncertainty.
 2. Test multiple forecast horizons and flare thresholds without touching the final test year.
 3. Add calibration and uncertainty analysis; compare against simple flux-threshold and persistence baselines.
 4. Examine detector gaps, solar-cycle drift, and sensitivity to quality-flag policy.
