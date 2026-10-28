@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+.ipynb_checkpoints/
+*.py[cod]
+.env
+.DS_Store
+Thumbs.db
+/data/raw/*
+!/data/raw/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+
+.jupyter_runtime/
+.tmp/
+

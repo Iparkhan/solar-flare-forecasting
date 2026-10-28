@@ -1,0 +1,74 @@
+{
+  "target": "M-class-or-stronger GOES flare start within the next 60 minutes",
+  "features": [
+    "log10_xrsb_now",
+    "log10_xrsa_now",
+    "log10_hardness_ratio",
+    "log10_xrsb_median_10m",
+    "log10_xrsb_max_30m",
+    "log10_xrsb_std_30m",
+    "log10_xrsb_change_10m"
+  ],
+  "split": {
+    "train": "2022-06 to 2023",
+    "validation": "2024",
+    "test": "2025"
+  },
+  "rows": {
+    "train": 147586,
+    "validation": 99684,
+    "test": 102754
+  },
+  "test_positive_rate_baseline_average_precision": 0.03854837767872783,
+  "models": {
+    "Logistic regression": {
+      "validation": {
+        "average_precision": 0.19111057424516234,
+        "roc_auc": 0.7223338564561965,
+        "brier_score": 0.39654444586241827,
+        "threshold": 0.805894724399413,
+        "precision_at_threshold": 0.21268384717636465,
+        "recall_at_threshold": 0.5166666666666667,
+        "f1_at_threshold": 0.30132742018772213,
+        "alert_rate": 0.23394927972392762,
+        "positive_rate": 0.09630432165643434
+      },
+      "test_2025": {
+        "average_precision": 0.10388943074638779,
+        "roc_auc": 0.7628698921097568,
+        "brier_score": 0.22823364109203348,
+        "threshold": 0.805894724399413,
+        "precision_at_threshold": 0.13163029980486074,
+        "recall_at_threshold": 0.18732643271901034,
+        "f1_at_threshold": 0.15461554490518858,
+        "alert_rate": 0.05485917823150437,
+        "positive_rate": 0.03854837767872783
+      }
+    },
+    "Histogram gradient boosting": {
+      "validation": {
+        "average_precision": 0.17947905354725416,
+        "roc_auc": 0.7022067586456345,
+        "brier_score": 0.08379300394637938,
+        "threshold": 0.09610946341108306,
+        "precision_at_threshold": 0.1734424011316809,
+        "recall_at_threshold": 0.5875,
+        "f1_at_threshold": 0.26781898475711097,
+        "alert_rate": 0.3262108262108262,
+        "positive_rate": 0.09630432165643434
+      },
+      "test_2025": {
+        "average_precision": 0.10567563204897684,
+        "roc_auc": 0.7603938921729992,
+        "brier_score": 0.03569454772420924,
+        "threshold": 0.09610946341108306,
+        "precision_at_threshold": 0.12728254997298757,
+        "recall_at_threshold": 0.29739964655390055,
+        "f1_at_threshold": 0.1782687651331719,
+        "alert_rate": 0.09006948634603032,
+        "positive_rate": 0.03854837767872783
+      }
+    }
+  },
+  "interpretation": "Exploratory retrospective result. Overlapping time windows create dependence; performance is not an operational warning-system estimate."
+}
