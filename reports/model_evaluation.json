@@ -68,7 +68,36 @@
         "alert_rate": 0.09006948634603032,
         "positive_rate": 0.03854837767872783
       }
+    },
+    "Single-feature XRS-B threshold baseline": {
+      "validation": {
+        "average_precision": 0.18927989638030612,
+        "roc_auc": 0.7226735706396252,
+        "brier_score": null,
+        "threshold": 0.9361186020354234,
+        "precision_at_threshold": 0.20602162418120118,
+        "recall_at_threshold": 0.5438541666666666,
+        "f1_at_threshold": 0.2988380745234961,
+        "alert_rate": 0.25422334577264155,
+        "positive_rate": 0.09630432165643434
+      },
+      "test_2025": {
+        "average_precision": 0.10139142001067693,
+        "roc_auc": 0.7631312069984384,
+        "brier_score": null,
+        "threshold": 0.9361186020354234,
+        "precision_at_threshold": 0.1281073260555044,
+        "recall_at_threshold": 0.24589750063115376,
+        "f1_at_threshold": 0.16845382220684885,
+        "alert_rate": 0.07399225334293555,
+        "positive_rate": 0.03854837767872783
+      },
+      "score_definition": "Empirical percentile rank of current log10 XRS-B in training data; rank is a score, not a probability."
     }
+  },
+  "uncertainty": {
+    "method": "Percentile interval from 1,000 bootstrap replicates sampling whole 2025 calendar months with replacement; preserves within-month dependence, but only 12 monthly blocks are available.",
+    "results_csv": "tables/monthly_block_bootstrap_ap_2025.csv"
   },
   "interpretation": "Exploratory retrospective result. Overlapping time windows create dependence; performance is not an operational warning-system estimate."
 }

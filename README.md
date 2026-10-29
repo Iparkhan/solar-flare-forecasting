@@ -16,7 +16,7 @@ See the [visual report](reports/portfolio_summary.md) for the signal-vs-flare pl
 
 The first end-to-end run uses science-quality GOES-18 XRS data from June 2022 through 2025 and NOAA's event catalog. It contains 1.86 million one-minute timestamps, 1,867 cataloged M/X events within the measurement interval, and 350,060 five-minute modeling rows after data-quality and feature-window checks.
 
-On the untouched 2025 test year, average precision was 0.104 for logistic regression and 0.106 for histogram gradient boosting, compared with a 0.039 positive-rate baseline. Under the documented alarm-episode rule, gradient boosting detected 16% of M/X events; about 7% of alarm episodes were followed by an event within one hour. The episode rule is exploratory and reveals substantial false-alert burden; results do not establish operational forecast skill. See [`reports/first_model_evaluation.md`](reports/first_model_evaluation.md) and [`reports/initial_data_audit.md`](reports/initial_data_audit.md).
+On the untouched 2025 test year, histogram gradient boosting reached average precision 0.106 versus 0.101 for a one-feature XRS-B benchmark and a 0.039 prevalence baseline. Their month-block bootstrap intervals overlap. Under the documented alarm-episode rule, the simple XRS-B benchmark detected 21% of M/X events versus 16% for gradient boosting. This modest ranking lift and high false-alert burden do not establish operational forecast skill. See [`reports/first_model_evaluation.md`](reports/first_model_evaluation.md) and [`reports/initial_data_audit.md`](reports/initial_data_audit.md).
 
 ## Methods
 
@@ -27,7 +27,8 @@ On the untouched 2025 test year, average precision was 0.104 for logistic regres
 - Features use observations at or before `t`; rolling windows require at least 25 valid minutes in the preceding 30 minutes.
 - Five-minute sampling reduces highly redundant rows.
 - Chronological split: train on 2022–2023, choose thresholds on 2024, report test metrics on 2025. Label horizons are kept inside their split.
-- Metrics include average precision, ROC-AUC, precision, recall, F1, alert rate, and a prevalence baseline.
+- Metrics include average precision, ROC-AUC, precision, recall, F1, alert rate, an event-window prevalence baseline, and a simple XRS-B-only rank benchmark. Thresholded alerts also receive event-level episode scores.
+- Month-block bootstrap intervals resample whole calendar months to account for within-month dependence; only 12 holdout blocks are available, so intervals are approximate.
 
 ## Quick start on Windows PowerShell
 

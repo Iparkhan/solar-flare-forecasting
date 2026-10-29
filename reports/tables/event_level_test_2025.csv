@@ -1,3 +1,4 @@
 model,alarm_episodes,hit_episodes,missed_events,event_recall,episode_precision,median_lead_minutes
 Logistic regression,387,48,301,0.1521,0.1240,22.5000
 Histogram gradient boosting,686,50,298,0.1606,0.0729,26.5000
+Single-feature XRS-B threshold baseline,679,65,281,0.2085,0.0957,22.0000

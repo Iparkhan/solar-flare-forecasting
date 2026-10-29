@@ -77,7 +77,7 @@ def main() -> None:
     table.to_csv(report / "tables" / "event_level_test_2025.csv", index=False, float_format="%.4f")
     lines = [
         "", "## Event-level alarm episodes", "",
-        "For an operationally interpretable complement to overlapping-window scores, threshold-crossing samples are merged into one alarm episode until a 60-minute quiet gap. An episode is a hit when an M/X catalog flare onset occurs in the next 60 minutes. Each flare is counted once; an alarm episode may cover multiple onsets. Median lead time is measured from episode start to its first matched onset.", "",
+        "To complement overlapping-window scores, threshold-crossing samples are merged into one alarm episode until a 60-minute quiet gap. An episode is a hit when an M/X catalog flare onset occurs in the next 60 minutes. Each flare is counted once; an alarm episode may cover multiple onsets. Median lead time is measured from episode start to its first matched onset.", "",
         "| Model | Alarm episodes | Hit episodes | Missed M/X events | Event recall | Episode precision | Median lead (min) |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
@@ -85,14 +85,13 @@ def main() -> None:
         lines.append(f"| {row['model']} | {row['alarm_episodes']} | {row['hit_episodes']} | {row['missed_events']} | {row['event_recall']:.3f} | {row['episode_precision']:.3f} | {row['median_lead_minutes']:.1f} |")
     lines += ["", "Download: [`tables/event_level_test_2025.csv`](tables/event_level_test_2025.csv). These are retrospective episode scores under the stated one-hour matching rule; they are not a validated operational alert protocol.",
               "", "## Limitations", "",
-              "This is retrospective classification of overlapping five-minute samples, not an event-independent operational forecast. Results depend on the chosen alert threshold and episode matching rule. Only one solar-cycle year is held out; calibration, uncertainty, alternate alert policies, and simple flux-threshold baselines still need study before scientific or operational claims.", ""]
+              "This is retrospective classification of overlapping five-minute samples, not an event-independent operational forecast. The single-feature XRS-B baseline slightly underperforms the ML models on average precision but detects more events under this episode rule. The apparent AP difference is small and the 12-month bootstrap intervals overlap. Results depend on the alert threshold and episode matching rule; calibration, further years, alternate alert policies, and operational validation remain open.", ""]
     path = report / "first_model_evaluation.md"
     text = path.read_text(encoding="utf-8")
-    marker = "## Limitations"
-    if "## Event-level alarm episodes" in text:
-        text = text[:text.index("## Event-level alarm episodes")].rstrip() + "\n\n" + "\n".join(lines).lstrip()
-    else:
-        text = text.replace(marker, "\n".join(lines))
+    section_starts = [position for heading in ("## Event-level alarm episodes", "## Limitations")
+                      if (position := text.find(heading)) >= 0]
+    prefix = text[:min(section_starts)] if section_starts else text.rstrip() + "\n\n"
+    text = prefix.rstrip() + "\n\n" + "\n".join(lines).lstrip()
     path.write_text(text, encoding="utf-8")
     print(table.to_string(index=False))
 

@@ -49,12 +49,13 @@ def choose_f1_threshold(y_true: np.ndarray, probability: np.ndarray) -> float:
     return float(thresholds[int(np.nanargmax(f1))])
 
 
-def metrics(y_true: np.ndarray, probability: np.ndarray, threshold: float) -> dict[str, float]:
+def metrics(y_true: np.ndarray, probability: np.ndarray, threshold: float,
+            probability_score: bool = True) -> dict[str, float | None]:
     prediction = probability >= threshold
     return {
         "average_precision": float(average_precision_score(y_true, probability)),
         "roc_auc": float(roc_auc_score(y_true, probability)),
-        "brier_score": float(brier_score_loss(y_true, probability)),
+        "brier_score": float(brier_score_loss(y_true, probability)) if probability_score else None,
         "threshold": float(threshold),
         "precision_at_threshold": float(precision_score(y_true, prediction, zero_division=0)),
         "recall_at_threshold": float(recall_score(y_true, prediction, zero_division=0)),
@@ -64,13 +65,48 @@ def metrics(y_true: np.ndarray, probability: np.ndarray, threshold: float) -> di
     }
 
 
+def month_block_bootstrap(y: pd.Series, scores: dict[str, np.ndarray],
+                          repetitions: int = 1000, seed: int = 42) -> pd.DataFrame:
+    """Resample whole calendar months to retain within-month time dependence."""
+    month_labels = y.index.tz_localize(None).to_period("M")
+    month_groups = [np.flatnonzero(month_labels == month) for month in month_labels.unique()]
+    rng = np.random.default_rng(seed)
+    samples = {name: [] for name in scores}
+    for _ in range(repetitions):
+        selected = rng.integers(0, len(month_groups), size=len(month_groups))
+        indices = np.concatenate([month_groups[i] for i in selected])
+        target = y.to_numpy()[indices]
+        if target.min() == target.max():
+            continue
+        for name, score in scores.items():
+            samples[name].append(average_precision_score(target, score[indices]))
+    baseline_name = "Single-feature XRS-B threshold baseline"
+    rows = []
+    for name, values in samples.items():
+        values = np.asarray(values)
+        row = {"model": name, "valid_replicates": len(values),
+               "average_precision_median": float(np.median(values)),
+               "ci_2_5": float(np.quantile(values, .025)),
+               "ci_97_5": float(np.quantile(values, .975)),
+               "delta_vs_xrsb_median": np.nan,
+               "delta_ci_2_5": np.nan,
+               "delta_ci_97_5": np.nan}
+        if name != baseline_name and len(values):
+            delta = values - np.asarray(samples[baseline_name])
+            row.update({"delta_vs_xrsb_median": float(np.median(delta)),
+                        "delta_ci_2_5": float(np.quantile(delta, .025)),
+                        "delta_ci_97_5": float(np.quantile(delta, .975))})
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def main() -> None:
     FIGURES.mkdir(parents=True, exist_ok=True)
     frame = pd.read_csv(DATA, parse_dates=["time_utc"]).set_index("time_utc")
     # Each label looks 60 minutes ahead. Drop rows whose target horizon crosses split boundaries.
     train_end = pd.Timestamp("2024-01-01", tz="UTC")
     valid_end = pd.Timestamp("2025-01-01", tz="UTC")
-    horizon = pd.Timedelta(minutes=60)
+    horizon = pd.Timedelta("60min")
     train = frame.loc[frame.index < train_end - horizon]
     valid = frame.loc[(frame.index >= train_end) & (frame.index < valid_end - horizon)]
     test = frame.loc[(frame.index >= valid_end) & (frame.index < pd.Timestamp("2026-01-01", tz="UTC") - horizon)]
@@ -115,6 +151,34 @@ def main() -> None:
               f"recall={result['test_2025']['recall_at_threshold']:.3f}; "
               f"precision={result['test_2025']['precision_at_threshold']:.3f}", flush=True)
 
+    # Rank only current XRS-B irradiance as a simple physical benchmark.
+    train_flux = np.sort(X_train["log10_xrsb_now"].to_numpy())
+    flux_scores = {
+        "validation": np.searchsorted(train_flux, X_valid["log10_xrsb_now"].to_numpy(), side="right") / len(train_flux),
+        "test": np.searchsorted(train_flux, X_test["log10_xrsb_now"].to_numpy(), side="right") / len(train_flux),
+    }
+    flux_threshold = choose_f1_threshold(y_valid.to_numpy(), flux_scores["validation"])
+    baseline_name = "Single-feature XRS-B threshold baseline"
+    all_results[baseline_name] = {
+        "validation": metrics(y_valid.to_numpy(), flux_scores["validation"], flux_threshold, probability_score=False),
+        "test_2025": metrics(y_test.to_numpy(), flux_scores["test"], flux_threshold, probability_score=False),
+        "score_definition": "Empirical percentile rank of current log10 XRS-B in training data; rank is a score, not a probability.",
+    }
+    baseline_col = baseline_name.lower().replace(" ", "_")
+    predictions[baseline_col] = flux_scores["test"]
+    curves[baseline_name] = precision_recall_curve(y_test, flux_scores["test"])
+    print(f"Fitting {baseline_name}...", flush=True)
+    print(f"  test average precision={all_results[baseline_name]['test_2025']['average_precision']:.4f}; "
+          f"recall={all_results[baseline_name]['test_2025']['recall_at_threshold']:.3f}; "
+          f"precision={all_results[baseline_name]['test_2025']['precision_at_threshold']:.3f}", flush=True)
+
+    bootstrap = month_block_bootstrap(y_test, {
+        name: predictions[name.lower().replace(" ", "_")].to_numpy()
+        for name in all_results
+    })
+    (OUT / "tables").mkdir(exist_ok=True)
+    bootstrap.to_csv(OUT / "tables" / "monthly_block_bootstrap_ap_2025.csv", index=False, float_format="%.4f")
+
     base_rate = float(y_test.mean())
     payload = {
         "target": "M-class-or-stronger GOES flare start within the next 60 minutes",
@@ -123,6 +187,10 @@ def main() -> None:
         "rows": {"train": len(train), "validation": len(valid), "test": len(test)},
         "test_positive_rate_baseline_average_precision": base_rate,
         "models": all_results,
+        "uncertainty": {
+            "method": "Percentile interval from 1,000 bootstrap replicates sampling whole 2025 calendar months with replacement; preserves within-month dependence, but only 12 monthly blocks are available.",
+            "results_csv": "tables/monthly_block_bootstrap_ap_2025.csv",
+        },
         "interpretation": "Exploratory retrospective result. Overlapping time windows create dependence; performance is not an operational warning-system estimate.",
     }
     (OUT / "model_evaluation.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -165,9 +233,27 @@ def main() -> None:
         "",
         "![Precision-recall curves](figures/precision_recall_2025.png)",
         "",
+        "## Monthly block-bootstrap uncertainty",
+        "",
+        "Intervals resample whole calendar months (1,000 replicates), retaining within-month dependence. Only 12 test blocks are available, so these intervals are approximate.",
+        "",
+        "| Model | AP median | 95% block-bootstrap interval | Paired AP delta vs XRS-B | 95% interval for delta |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for _, row in bootstrap.iterrows():
+        delta = "—" if pd.isna(row["delta_vs_xrsb_median"]) else f"{row['delta_vs_xrsb_median']:+.3f}"
+        delta_ci = "—" if pd.isna(row["delta_ci_2_5"]) else f"{row['delta_ci_2_5']:+.3f}–{row['delta_ci_97_5']:+.3f}"
+        lines.append(f"| {row['model']} | {row['average_precision_median']:.3f} | {row['ci_2_5']:.3f}–{row['ci_97_5']:.3f} | {delta} | {delta_ci} |")
+    lines += [
+        "",
+        "",
+        "Paired differences use the same resampled months for each method and the XRS-B baseline. These intervals are more informative for model-versus-baseline comparison than separate AP intervals.",
+        "",
+        "Download: [`tables/monthly_block_bootstrap_ap_2025.csv`](tables/monthly_block_bootstrap_ap_2025.csv).",
+        "",
         "## Limitations",
         "",
-        "This is retrospective classification of overlapping 5-minute samples, not event-independent operational forecasting. The one-hour target horizon, threshold, alert burden, and event-level scoring need sensitivity analysis before making scientific or operational claims. The test period is a single solar-cycle year.",
+        "This is retrospective classification of overlapping five-minute samples, not an event-independent operational forecast. The single-feature XRS-B benchmark is an empirical percentile rank, not a probability. The complex model's AP advantage over the simple benchmark is small and the block-bootstrap intervals overlap; the simple benchmark has better event recall under this alarm rule. Event-level scores depend on the chosen threshold and episode rule, and uncertainty intervals use just 12 monthly groups. The test period is a single solar-cycle year.",
     ]
     (OUT / "first_model_evaluation.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Saved {OUT / 'first_model_evaluation.md'}", flush=True)

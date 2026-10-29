@@ -27,7 +27,7 @@ This active interval illustrates the scale and timing of real XRS-B measurements
 
 ![Precision-recall curves](figures/precision_recall_2025.png)
 
-Average precision was 0.104 for logistic regression and 0.106 for histogram gradient boosting, versus a 0.039 prevalence baseline. The thresholds were chosen using 2024 validation data. On the overlapping five-minute windows, gradient boosting reached 0.30 recall and 0.13 precision at a 9.01% alert rate.
+Average precision was 0.104 for logistic regression and 0.106 for histogram gradient boosting, versus 0.101 for an XRS-B-only threshold benchmark and a 0.039 prevalence baseline. The ML model's small AP advantage over the simple benchmark has overlapping month-block bootstrap intervals. On the overlapping five-minute windows, gradient boosting reached 0.30 recall and 0.13 precision at a 9.01% alert rate.
 
 ## 4. How alert rates changed by month in the holdout year
 
@@ -37,7 +37,7 @@ The threshold remains fixed across 2025. Month-to-month variation highlights why
 
 ## 5. What happens when alerts are grouped by flare event?
 
-Window scores can make a run of adjacent alerts look like many independent successes. Grouping alerts into episodes gives a more conservative view: under the documented rule, histogram gradient boosting detected 16% of distinct 2025 M/X events, and 7% of alarm episodes were followed by an event within one hour. This exposes a substantial false-alert and missed-event problem. See the [event-level evaluation](first_model_evaluation.md#event-level-alarm-episodes) and its [CSV table](tables/event_level_test_2025.csv).
+Window scores can make a run of adjacent alerts look like many independent successes. Grouping alerts into episodes gives a more conservative view: under the documented rule, histogram gradient boosting detected 16% of distinct 2025 M/X events, and 7% of alarm episodes were followed by an event within one hour. The one-feature XRS-B benchmark detected 21% with 10% episode precision. This exposes a substantial false-alert and missed-event problem, and shows that added model complexity has not improved event-level detection. See the [event-level evaluation](first_model_evaluation.md#event-level-alarm-episodes) and its [CSV table](tables/event_level_test_2025.csv).
 
 ## Evaluation design and limitations
 
@@ -53,3 +53,5 @@ Window scores can make a run of adjacent alerts look like many independent succe
 - [First model evaluation](first_model_evaluation.md)
 - [Annual event-count table](tables/flare_counts_by_year.csv)
 - [Monthly 2025 test table](tables/monthly_test_metrics_2025.csv)
+- [Monthly block-bootstrap AP intervals](tables/monthly_block_bootstrap_ap_2025.csv)
+- [Event-level alarm episode metrics](tables/event_level_test_2025.csv)
